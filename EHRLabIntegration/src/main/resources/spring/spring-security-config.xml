@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security
+                                 http://www.springframework.org/schema/security/spring-security.xsd
+                                 http://www.springframework.org/schema/beans
+                                 http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+	<!-- This is where we configure Spring-Security -->
+	<security:http auto-config="true" use-expressions="true">
+		<security:csrf />
+		<security:access-denied-handler error-page="/accessDenied" />
+		<security:intercept-url pattern="/dashboard" access="hasRole('ROLE_PRACMAN_DEV')" />
+		<security:form-login login-page="/login" default-target-url="/dashboard" always-use-default-target="true" />
+		<security:logout invalidate-session="true" />
+	</security:http>
+
+	<bean id="ldapContext"
+		class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
+		<constructor-arg value="ldap://MS.ds.uhc.com:389/DC=ms,DC=ds,DC=uhc,DC=com" />
+		<property name="userDn"
+			value="CN=ocdapp_ose,CN=Users,DC=ms,DC=ds,DC=uhc,DC=com" />
+		<property name="password" value="Optum#950" />
+	</bean>
+
+	<security:authentication-manager>
+		<security:authentication-provider
+			ref="ldapAuthProvider"></security:authentication-provider>
+	</security:authentication-manager>
+	<bean id="ldapAuthProvider"
+		class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
+		<constructor-arg>
+			<bean
+				class="org.springframework.security.ldap.authentication.BindAuthenticator">
+				<constructor-arg ref="ldapContext" />
+				<property name="userDnPatterns">
+					<list>
+						<value>CN={0},CN=Users</value>
+					</list>
+				</property>
+			</bean>
+		</constructor-arg>
+		<constructor-arg>
+			<bean
+				class="org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopulator">
+				<constructor-arg ref="ldapContext" />
+				<constructor-arg value="CN=Users" />
+				<property name="groupRoleAttribute" value="CN" />
+			</bean>
+		</constructor-arg>
+	</bean>
+</beans>
